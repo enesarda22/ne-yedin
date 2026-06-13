@@ -37,33 +37,23 @@
 <div class="wrap">
   <div id="main">
     <h1 id="q">Ne yedin? 🍽️</h1>
-    <p class="lead"><b>Nasıl istersen öyle yaz</b> — yazım, kısaltma, küçük harf hiç
-      önemli değil. (Soruya birebir uymak zorunda değilsin.)</p>
     <form id="f">
-      <textarea name="yemek" required autofocus
-        placeholder="ör: sabah simit çay, öğlen iş yerinde mercimek çorbası 2 ekmek, akşam mantı"></textarea>
+      <textarea name="yemek" required autofocus></textarea>
       <button type="submit">Gönder ✓</button>
     </form>
     <p class="msg" id="msg"></p>
-    <p class="consent-line">Anonim — kişisel bilgi toplanmaz. Yalnızca Türkçe bir
-      yemek-takip uygulamasını eğitmek için kullanılır. Göndererek bunu kabul etmiş olursun.</p>
-    <p class="game-link"><a href="#" id="play-link">🤖 canın sıkıldıysa: insan mı, yapay zekâ mı? (mini oyun)</a></p>
-  </div>
 
-  <!-- optional human-vs-AI game (realism discriminator); hidden by default -->
-  <div id="game-view" style="display:none">
-    <h1>İnsan mı, yapay zekâ mı? 🕵️</h1>
-    <p class="lead">Bu yemek notunu insan mı yazdı, yapay zekâ mı uydurdu?</p>
-    <div class="card"><span id="game-text"></span></div>
-    <div class="gbtns">
-      <button id="g-human" style="background:#60a5fa;color:#06203f">👤 İnsan</button>
-      <button id="g-ai" style="background:#f472b6;color:#3f0626">🤖 Yapay zekâ</button>
-    </div>
-    <p class="hint" id="game-fb" style="min-height:1.2em;margin-top:12px"></p>
-    <p class="hint">Skor: <span id="game-score">0</span> / <span id="game-seen">0</span></p>
-    <div id="game-done" style="display:none;text-align:center">
-      <p id="game-final" style="font-weight:600"></p>
-      <button onclick="location.reload()" style="max-width:300px;margin:6px auto">Bitti, geri dön</button>
+    <!-- mini game: appears inline here once real cards exist (no click to open) -->
+    <div id="game" style="display:none">
+      <p class="hint" style="margin-top:34px;font-weight:600">🤖 insan mı, yapay zekâ mı?</p>
+      <div class="card"><span id="game-text"></span></div>
+      <div class="gbtns">
+        <button id="g-human" style="background:#60a5fa;color:#06203f">👤 İnsan</button>
+        <button id="g-ai" style="background:#f472b6;color:#3f0626">🤖 Yapay zekâ</button>
+      </div>
+      <p class="hint" id="game-fb" style="min-height:1.2em;margin-top:12px"></p>
+      <p class="hint">Skor: <span id="game-score">0</span> / <span id="game-seen">0</span></p>
+      <p class="hint" id="game-final" style="font-weight:600"></p>
     </div>
   </div>
 </div>
@@ -71,20 +61,29 @@
 <script>
   const ENDPOINT = "https://formspree.io/f/xykabrnj";
 
-  // --- rotating question: same single box, varied real contexts ---
+  // --- rotating question + matching placeholder: one box, varied real contexts ---
   const QUESTIONS = [
-    "Sabah kahvaltıda ne yedin? 🍳", "Bugün öğlen ne yedin? 🍽️",
-    "Dün akşam ne yediniz? 🌙", "En son dışarı çıktığında ne yedin? 🛵",
-    "Bugün ne atıştırdın? 🍫", "En son ne içtin? ☕",
-    "Canın bir şey çekti, ne yedin? 😋", "İşte/okulda ne yedin? 💻",
-    "Akşam yemeğinde ne vardı? 🍲", "Tatlı yedin mi, ne? 🍰",
-    "Spordan sonra ne yedin? 🏋️", "Gece bir şey yedin mi? 🌚",
-    "Hafta sonu en güzel ne yedin? 🎉", "Paket/sipariş ne yedin? 📦",
+    ["Sabah kahvaltıda ne yedin? 🍳", "ör: 2 yumurta, beyaz peynir, zeytin, çay"],
+    ["Bugün öğlen ne yedin? 🍽️", "ör: iş yerinde mercimek çorbası ve ekmek"],
+    ["Dün akşam ne yediniz? 🌙", "ör: tavuklu pilav, cacık, salata"],
+    ["En son dışarı çıktığında ne yedin? 🛵", "ör: köşedeki büfeden tavuklu dürüm + ayran"],
+    ["Bugün ne atıştırdın? 🍫", "ör: eti browni ve 1 kutu kola"],
+    ["En son ne içtin? ☕", "ör: sütlü orta şekerli türk kahvesi"],
+    ["Canın bir şey çekti, ne yedin? 😋", "ör: gece dolaptan bir kaşık nutella"],
+    ["İşte/okulda ne yedin? 💻", "ör: kantinden kaşarlı tost ve çay"],
+    ["Akşam yemeğinde ne vardı? 🍲", "ör: karnıyarık, pilav, yoğurt"],
+    ["Tatlı yedin mi, ne? 🍰", "ör: 2 dilim baklava"],
+    ["Spordan sonra ne yedin? 🏋️", "ör: protein shake ve muz"],
+    ["Gece bir şey yedin mi? 🌚", "ör: yatmadan 1 kase yoğurt"],
+    ["Hafta sonu en güzel ne yedin? 🎉", "ör: kahvaltıda menemen, simit, çay"],
+    ["Paket/sipariş ne yedin? 📦", "ör: lahmacun ve şalgam"],
   ];
   let currentQ = "";
   function pickQ() {
-    currentQ = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
-    document.getElementById('q').textContent = currentQ;
+    const [q, ex] = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+    currentQ = q;
+    document.getElementById('q').textContent = q;
+    document.querySelector('textarea').placeholder = ex;
   }
   pickQ();
 
@@ -111,17 +110,15 @@
     }
   });
 
-  // --- optional game (activates only once pool.json has real cards) ---
+  // --- inline mini game: auto-shows under the box ONCE pool.json has real cards ---
   const ROUNDS = 10; let pool = [], gi = 0, score = 0, judgments = [];
-  document.getElementById('play-link').addEventListener('click', async (e) => {
-    e.preventDefault();
+  (async function initGame(){
     try { pool = (await (await fetch('pool.json',{cache:'no-store'})).json())
                   .sort(()=>Math.random()-0.5).slice(0,ROUNDS); } catch { pool = []; }
-    if (pool.length < 4) { msg.textContent = "oyun henüz hazır değil 🙂"; return; }
-    document.getElementById('main').style.display = 'none';
-    document.getElementById('game-view').style.display = 'block';
-    window.scrollTo(0,0); card();
-  });
+    if (pool.length < 4) return;                 // not enough real cards yet -> stay hidden
+    document.getElementById('game').style.display = 'block';
+    card();
+  })();
   function card(){ if(gi>=pool.length) return done();
     document.getElementById('game-text').textContent = pool[gi].text;
     document.getElementById('game-fb').textContent=''; document.getElementById('game-seen').textContent=gi; }
@@ -136,7 +133,6 @@
     document.getElementById('game-text').parentElement.style.display='none';
     document.getElementById('g-human').parentElement.style.display='none';
     document.getElementById('game-fb').style.display='none';
-    document.getElementById('game-done').style.display='block';
     try{ await fetch(ENDPOINT,{method:"POST",headers:{"Accept":"application/json","Content-Type":"application/json"},
       body:JSON.stringify({mode:"discrimination_game",judgments,score,n:pool.length,_ts:new Date().toISOString()})});}catch{} }
   document.getElementById('g-human').addEventListener('click',()=>guess('human'));
