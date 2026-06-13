@@ -59,7 +59,7 @@
 </div>
 
 <script>
-  const ENDPOINT = "https://formspree.io/f/xykabrnj";
+  const ENDPOINT = "https://script.google.com/macros/s/AKfycbwEeriCqnsIWLaAr0T7t_Pzn_ZesPLtqmZ7LzJbFL9mZOSwF6IEPjrIzR-M5KMSNoq-dw/exec";
 
   // --- rotating question + matching placeholder: one box, varied real contexts ---
   const QUESTIONS = [
@@ -95,8 +95,8 @@
     const text = box.value.trim();
     if (!text) return;
     try {
-      await fetch(ENDPOINT, { method:"POST",
-        headers:{"Accept":"application/json","Content-Type":"application/json"},
+      await fetch(ENDPOINT, { method:"POST", mode:"no-cors",
+        headers:{"Content-Type":"text/plain;charset=utf-8"},
         body: JSON.stringify({ yemek:text, soru:currentQ,
                                _ts:new Date().toISOString(), _src:"web-v2" })});
       box.value = "";
@@ -128,13 +128,25 @@
     const fb=document.getElementById('game-fb');
     fb.textContent=ok?'✓ doğru!':`✗ aslında ${truth==='human'?'insan 👤':'yapay zekâ 🤖'}`;
     document.getElementById('game-score').textContent=score; gi++; setTimeout(card,650); }
-  async function done(){ document.getElementById('game-final').textContent=
-      `${score}/${pool.length} bildin.`+(score<=pool.length/2?' Yapay zekâ seni kandırdı 😄':' Keskin gözsün 👀');
+  let gameSent = false;
+  function sendGame(){                       // flat payload, fires once, survives page-leave
+    if (gameSent || judgments.length === 0) return;
+    gameSent = true;
+    try { fetch(ENDPOINT, { method:"POST", mode:"no-cors", keepalive:true,
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body: JSON.stringify({ mode:"oyun", score, seen:gi, n:pool.length,
+        cevaplar: judgments.map(j=>`${j.id}:${j.truth}->${j.guess}`).join(" | "),
+        _ts:new Date().toISOString() })}); } catch {}
+  }
+  function done(){ document.getElementById('game-final').textContent=
+      `${score}/${gi} bildin.`+(score<=gi/2?' Yapay zekâ seni kandırdı 😄':' Keskin gözsün 👀');
     document.getElementById('game-text').parentElement.style.display='none';
     document.getElementById('g-human').parentElement.style.display='none';
     document.getElementById('game-fb').style.display='none';
-    try{ await fetch(ENDPOINT,{method:"POST",headers:{"Accept":"application/json","Content-Type":"application/json"},
-      body:JSON.stringify({mode:"discrimination_game",judgments,score,n:pool.length,_ts:new Date().toISOString()})});}catch{} }
+    sendGame(); }
+  // capture partial games too: send when the tab is hidden / closed
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') sendGame(); });
+  window.addEventListener('pagehide', sendGame);
   document.getElementById('g-human').addEventListener('click',()=>guess('human'));
   document.getElementById('g-ai').addEventListener('click',()=>guess('ai'));
 </script>
