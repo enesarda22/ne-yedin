@@ -88,11 +88,17 @@
 
   // --- submit: send, clear, new question, let them add another ---
   const form = document.getElementById('f'), msg = document.getElementById('msg'),
-        box = form.querySelector('textarea');
+        box = form.querySelector('textarea'), btn = form.querySelector('button');
+  let sending = false;   // guard: the POST takes ~1-2s; block re-clicks meanwhile
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (sending) return;                 // ignore extra clicks while in flight
     const text = box.value.trim();
     if (!text) return;
+    sending = true;
+    btn.disabled = true;                 // visually + functionally locked
+    const label = btn.textContent;
+    btn.textContent = "Gönderiliyor…";
     try {
       await fetch(ENDPOINT, { method:"POST", mode:"no-cors",
         headers:{"Content-Type":"text/plain;charset=utf-8"},
@@ -100,12 +106,17 @@
                                _ts:new Date().toISOString(), _src:"web-v2" })});
       box.value = "";
       pickQ();   // fresh question for the next entry
+      msg.style.color = "";
       msg.textContent = "✓ kaydedildi! başka bir şey de ekleyebilirsin 🙂";
       box.focus();
       setTimeout(() => { msg.textContent = ""; }, 4000);
     } catch {
       msg.style.color = "#f472b6";
       msg.textContent = "gönderilemedi 😕 tekrar dener misin?";
+    } finally {
+      sending = false;                   // re-enable for the NEXT (intentional) entry
+      btn.disabled = false;
+      btn.textContent = label;
     }
   });
 
