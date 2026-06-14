@@ -42,23 +42,22 @@
       <button type="submit">Gönder ✓</button>
     </form>
     <p class="msg" id="msg"></p>
-
-    <!-- mini game: appears inline here once real cards exist (no click to open) -->
-    <div id="game" style="display:none">
-      <p class="hint" style="margin-top:34px;font-weight:600">🤖 insan mı, yapay zekâ mı?</p>
-      <div class="card"><span id="game-text"></span></div>
-      <div class="gbtns">
-        <button id="g-human" style="background:#60a5fa;color:#06203f">👤 İnsan</button>
-        <button id="g-ai" style="background:#f472b6;color:#3f0626">🤖 Yapay zekâ</button>
-      </div>
-      <p class="hint" id="game-fb" style="min-height:1.2em;margin-top:12px"></p>
-      <p class="hint" id="game-final" style="font-weight:600"></p>
-    </div>
   </div>
 </div>
 
 <script>
   const ENDPOINT = "https://script.google.com/macros/s/AKfycbwEeriCqnsIWLaAr0T7t_Pzn_ZesPLtqmZ7LzJbFL9mZOSwF6IEPjrIzR-M5KMSNoq-dw/exec";
+
+  // anonymous, random per-browser id (NO PII) — lets us split train/dev/TEST by
+  // source (gate hygiene: never train on gate rows) + dedup one person's spam.
+  // KVKK-clean: an opaque random token, not tied to any identity. Rides in the POST
+  // body -> captured in the Sheet's `raw` column (no backend change needed).
+  let sid = localStorage.getItem("nysid");
+  if (!sid) {
+    sid = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+          : Date.now().toString(36) + Math.random().toString(16).slice(2);
+    localStorage.setItem("nysid", sid);
+  }
 
   // --- rotating question + matching placeholder: one box, varied real contexts ---
   const QUESTIONS = [
@@ -102,7 +101,7 @@
     try {
       await fetch(ENDPOINT, { method:"POST", mode:"no-cors",
         headers:{"Content-Type":"text/plain;charset=utf-8"},
-        body: JSON.stringify({ yemek:text, soru:currentQ,
+        body: JSON.stringify({ yemek:text, soru:currentQ, sid:sid,
                                _ts:new Date().toISOString(), _src:"web-v2" })});
       box.value = "";
       pickQ();   // fresh question for the next entry
@@ -119,45 +118,6 @@
       btn.textContent = label;
     }
   });
-
-  // --- inline mini game: auto-shows under the box ONCE pool.json has real cards ---
-  const ROUNDS = 10; let pool = [], gi = 0, score = 0, judgments = [];
-  (async function initGame(){
-    try { pool = (await (await fetch('pool.json',{cache:'no-store'})).json())
-                  .sort(()=>Math.random()-0.5).slice(0,ROUNDS); } catch { pool = []; }
-    if (pool.length < 4) return;                 // not enough real cards yet -> stay hidden
-    document.getElementById('game').style.display = 'block';
-    card();
-  })();
-  function card(){ if(gi>=pool.length) return done();
-    document.getElementById('game-text').textContent = pool[gi].text;
-    document.getElementById('game-fb').textContent=''; }
-  function guess(g){ if(gi>=pool.length) return; const c=pool[gi];
-    const truth=c.truth==='real'?'human':'ai'; if(g===truth) score++;  // tracked, not shown
-    judgments.push({id:c.id,truth:c.truth,guess:g});
-    document.getElementById('game-fb').textContent='✓';   // neutral — no truth reveal
-    gi++; setTimeout(card,500); }
-  let gameSent = false;
-  function sendGame(){                       // flat payload, fires once, survives page-leave
-    if (gameSent || judgments.length === 0) return;
-    gameSent = true;
-    try { fetch(ENDPOINT, { method:"POST", mode:"no-cors", keepalive:true,
-      headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body: JSON.stringify({ mode:"oyun", score, seen:gi, n:pool.length,
-        cevaplar: judgments.map(j=>`${j.id}:${j.truth}->${j.guess}`).join(" | "),
-        _ts:new Date().toISOString() })}); } catch {}
-  }
-  function done(){ document.getElementById('game-final').textContent=
-      'Teşekkürler! Tahminlerin kaydedildi 🙏';
-    document.getElementById('game-text').parentElement.style.display='none';
-    document.getElementById('g-human').parentElement.style.display='none';
-    document.getElementById('game-fb').style.display='none';
-    sendGame(); }
-  // capture partial games too: send when the tab is hidden / closed
-  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') sendGame(); });
-  window.addEventListener('pagehide', sendGame);
-  document.getElementById('g-human').addEventListener('click',()=>guess('human'));
-  document.getElementById('g-ai').addEventListener('click',()=>guess('ai'));
 </script>
 </body>
 </html>
