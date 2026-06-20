@@ -49,29 +49,38 @@
     localStorage.setItem("nysid", sid);
   }
 
-  // --- rotating question + matching placeholder: one box, varied real contexts ---
+  // --- rotating question + a ROTATING SET of diverse examples per context ---
+  // Each context carries several varied examples (picked at random) so no single food
+  // is over-seeded across the corpus — reduces the elicitation bias the gate must avoid.
+  // Examples model the real TERSE register (bare-space, varied foods/brands/quantities).
   const QUESTIONS = [
-    ["Sabah kahvaltıda ne yedin? 🍳", "ör: 2 yumurta, beyaz peynir, zeytin, çay"],
-    ["Bugün öğlen ne yedin? 🍽️", "ör: iş yerinde mercimek çorbası ve ekmek"],
-    ["Dün akşam ne yediniz? 🌙", "ör: tavuklu pilav, cacık, salata"],
-    ["En son dışarı çıktığında ne yedin? 🛵", "ör: köşedeki büfeden tavuklu dürüm + ayran"],
-    ["Bugün ne atıştırdın? 🍫", "ör: eti browni ve 1 kutu kola"],
-    ["En son ne içtin? ☕", "ör: sütlü orta şekerli türk kahvesi"],
-    ["Canın bir şey çekti, ne yedin? 😋", "ör: gece dolaptan bir kaşık nutella"],
-    ["İşte/okulda ne yedin? 💻", "ör: kantinden kaşarlı tost ve çay"],
-    ["Akşam yemeğinde ne vardı? 🍲", "ör: karnıyarık, pilav, yoğurt"],
-    ["Tatlı yedin mi, ne? 🍰", "ör: 2 dilim baklava"],
-    ["Spordan sonra ne yedin? 🏋️", "ör: protein shake ve muz"],
-    ["Gece bir şey yedin mi? 🌚", "ör: yatmadan 1 kase yoğurt"],
-    ["Hafta sonu en güzel ne yedin? 🎉", "ör: kahvaltıda menemen, simit, çay"],
-    ["Paket/sipariş ne yedin? 📦", "ör: lahmacun ve şalgam"],
+    ["Sabah kahvaltıda ne yedin? 🍳", ["yumurta peynir zeytin çay", "menemen ekmek", "simit çay", "yulaf süt muz", "2 dilim ekmek bal kaymak"]],
+    ["Bugün öğlen ne yedin? 🍽️", ["mercimek çorba ekmek", "tavuklu pilav cacık", "kuru fasulye pilav turşu", "köfte ızgara", "nohut yemeği bulgur pilavı"]],
+    ["Dün akşam ne yediniz? 🌙", ["karnıyarık pilav yoğurt", "balık salata", "makarna", "sebze yemeği ekmek", "tavuk sote"]],
+    ["En son dışarı çıktığında ne yedin? 🛵", ["tavuklu dürüm ayran", "lahmacun şalgam", "büfeden hamburger", "pide", "kokoreç"]],
+    ["Bugün ne atıştırdın? 🍫", ["kraker", "1 avuç kuruyemiş", "cikolata", "gofret kola", "meyve"]],
+    ["En son ne içtin? ☕", ["türk kahvesi", "çay", "1 kutu kola", "ayran", "limonata"]],
+    ["Canın bir şey çekti, ne yedin? 😋", ["bir kaşık nutella", "cips", "dondurma", "kek", "bisküvi"]],
+    ["İşte/okulda ne yedin? 💻", ["kaşarlı tost çay", "kantinden döner", "poğaça ayran", "sandviç", "salata"]],
+    ["Akşam yemeğinde ne vardı? 🍲", ["mantı yoğurt", "etli nohut pilav", "ızgara köfte sebze", "pizza", "güveç"]],
+    ["Tatlı yedin mi, ne? 🍰", ["2 dilim baklava", "sütlaç", "künefe", "tulumba", "trileçe"]],
+    ["Spordan sonra ne yedin? 🏋️", ["protein shake muz", "haşlanmış yumurta", "tavuk göğsü pilav", "yoğurt granola", "süt"]],
+    ["Gece bir şey yedin mi? 🌚", ["1 kase yoğurt", "meyve", "peynir ekmek", "ayran", "biraz cikolata"]],
+    ["Hafta sonu en güzel ne yedin? 🎉", ["serpme kahvaltı", "mangal", "iskender", "pizza", "menemen simit çay"]],
+    ["Paket/sipariş ne yedin? 📦", ["lahmacun şalgam", "tavuklu pizza kola", "çiğköfte dürüm", "adana dürüm ayran", "tantuni"]],
+    ["Bugün meyve/sebze yedin mi? 🍎", ["elma portakal muz", "salatalık domates", "1 avuç çilek", "havuç", "karpuz"]],
+    ["Süt ürünü? 🥛", ["ayran", "süzme yoğurt", "beyaz peynir", "1 bardak süt", "kefir"]],
+    ["Markadan bir şey? 🏷️", ["nutella ekmek", "eti browni", "ülker çikolatalı gofret", "danone meyveli yoğurt", "algida dondurma"]],
+    ["Diyetteysen ne yedin? 🥗", ["haşlanmış yumurta salata", "ızgara tavuk", "yoğurt", "az şekerli kahve", "tam buğday ekmek peynir"]],
+    ["Çocukla/ailece ne yediniz? 👨‍👩‍👧", ["makarna köfte", "pilav tavuk", "çorba ekmek", "patates kızartması", "süt bisküvi"]],
+    ["Bir şey kaçırdın mı bugün? 📝", ["sabah simit", "ikindi çay kurabiye", "yolda gofret", "akşam çekirdek", "gece bir dilim pizza"]],
   ];
   let currentQ = "";
   function pickQ() {
-    const [q, ex] = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+    const [q, exs] = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
     currentQ = q;
     document.getElementById('q').textContent = q;
-    document.querySelector('textarea').placeholder = ex;
+    document.querySelector('textarea').placeholder = "ör: " + exs[Math.floor(Math.random() * exs.length)];
   }
   pickQ();
 
